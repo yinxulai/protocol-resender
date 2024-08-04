@@ -1,0 +1,48 @@
+name: Create and publish Docker image
+
+on:
+  release:
+    types: [published]
+# 配置此工作流以在每次将更改推送到名为 的分支时运行release。
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    # 此工作流程中有一个作业。它配置为在最新可用版本的 Ubuntu 上运行。
+
+    permissions:
+      contents: read
+      packages: write
+      # GITHUB_TOKEN设置授予此作业中的操作的权限。
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_NAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+          # 使用该 docker/login-action 操作，使用将发布包的帐户和密码登录容器注册表registry。发布后，包的范围仅限于此处定义的帐户。
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/yinxulai/protocol-resender
+          # 此步骤使用docker/metadata-action提取将应用于指定映像的标签和标签。“id元”允许在后续步骤中引用此步骤的输出。该images值提供标记和标签的基本名称。
+
+      - name: Build and push Server Docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
