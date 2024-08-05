@@ -13,6 +13,23 @@ export function promiseToLog<T>(promise: Promise<T>): void {
   promise.catch(err => console.error(err))
 }
 
+export function getTotalSeconds(period: 'day' | 'week' | 'month'): number {
+  switch (period) {
+    case 'day':
+      return 24 * 60 * 60 // 1 day = 86400 seconds
+    case 'week':
+      return 7 * 24 * 60 * 60 // 1 week = 604800 seconds
+    case 'month':
+      const currentDate = new Date()
+      const currentYear = currentDate.getFullYear()
+      const currentMonth = currentDate.getMonth() + 1 // 月份从 0 开始计数
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
+      return daysInMonth * 24 * 60 * 60 // 当前月的总秒数
+    default:
+      throw new Error('Invalid period. Please use "day", "week", or "month".')
+  }
+}
+
 /**
  * 根据 distribution 生成按指定时间间距数据分布数组
  * @param rule - TaskPeriodicDistributionRule 对象
@@ -20,23 +37,6 @@ export function promiseToLog<T>(promise: Promise<T>): void {
  * @returns 生成的数据分布数组
  */
 export function generatePeriodicDistribution(rule: TaskPeriodicDistributionRule, interval: number): number[] {
-  function getTotalSeconds(period: string): number {
-    switch (period) {
-      case 'day':
-        return 24 * 60 * 60 // 1 day = 86400 seconds
-      case 'week':
-        return 7 * 24 * 60 * 60 // 1 week = 604800 seconds
-      case 'month':
-        const currentDate = new Date()
-        const currentYear = currentDate.getFullYear()
-        const currentMonth = currentDate.getMonth() + 1 // 月份从 0 开始计数
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
-        return daysInMonth * 24 * 60 * 60 // 当前月的总秒数
-      default:
-        throw new Error('Invalid period. Please use "day", "week", or "month".')
-    }
-  }
-
   /**
    * 线性插值
    * @param a - 起点值
@@ -110,4 +110,28 @@ export function generatePeriodicDistribution(rule: TaskPeriodicDistributionRule,
   }
 
   return  distributeErrorRandomly(distributionArray, rule.amount - totalAllocated)
+}
+
+/**
+ * 根据当前日期和周期类型获取当前日期的数据分布
+ */
+export function getCurrentDateDistribution(distribution: number[], cycle: 'day' | 'week' | 'month'): number {
+  function getOffsetSeconds(cycle: 'day' | 'week' | 'month'): number {
+    const now = new Date()
+
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const thisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay())
+
+
+    if (cycle === 'day') return (now.getTime() - today.getTime()) / 1000
+    if (cycle === 'week') return (now.getTime() - thisWeek.getTime()) / 1000
+    if (cycle === 'month') return (now.getTime() - thisMonth.getTime()) / 1000
+    throw new Error('Unsupported cycle')
+  }
+
+  const interval = 10 * 60 // 10分钟
+  const offsetSeconds = getOffsetSeconds(cycle)
+  const offsetScale = Math.floor(offsetSeconds / interval)
+  return distribution[offsetScale]
 }

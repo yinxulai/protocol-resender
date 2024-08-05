@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
-import { promiseToLog } from '@/helper'
 import type { Server, TaskRule } from '@/type'
 import { PrismaClient, Status, Task, TaskRecord } from '@prisma/client'
+import { promiseToLog, generatePeriodicDistribution, getCurrentDateDistribution } from '@/helper'
 
 import { createSenderManager } from './sender'
 
@@ -11,15 +11,16 @@ type CreateTaskRecordData = Omit<TaskRecord, 'id' | 'taskId'>
 function getShouldProcessCount(task: Task): number {
   const rule = task.rule as unknown as TaskRule
 
-  if (rule && rule.type === 'scheduled') {
-    const currentTime = dayjs(new Date())
-    const processingTime = dayjs(rule.date)
-    if (processingTime.isBefore(currentTime)) return 1
-  }
+  // if (rule && rule.type === 'scheduled') {
+  //   const currentTime = dayjs(new Date())
+  //   const processingTime = dayjs(rule.date)
+  //   if (processingTime.isBefore(currentTime)) return 1
+  // }
 
   // 模拟人类的生活习惯
-  if (rule && rule.type === 'periodic') {
-    return 0
+  if (rule && rule.type === 'periodicDistribution') {
+    const distribution = generatePeriodicDistribution(rule, 10)
+    return getCurrentDateDistribution(distribution, rule.cycle)
   }
 
   throw new Error('unsupported rule type')
@@ -90,7 +91,7 @@ export function createTaskScheduler(db: PrismaClient): Server {
           processTask(task)
         }
       }
-    }, 500)
+    }, 1000)
   }
 
   async function close() {

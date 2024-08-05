@@ -1,7 +1,5 @@
-import { generatePeriodicDistribution } from './helper'
 import { TaskPeriodicDistributionRule } from './type'
-
-import { getRandomHighPort } from './helper'
+import { generatePeriodicDistribution, getCurrentDateDistribution, getRandomHighPort } from './helper'
 
 describe('getRandomHighPort', () => {
   it('should generate a random port within the valid range', () => {
@@ -29,7 +27,7 @@ describe('getRandomHighPort', () => {
 describe('generatePeriodicDistribution', () => {
   test('should generate correct distribution array for daily cycle with 10 minute interval', () => {
     const rule: TaskPeriodicDistributionRule = {
-      type: 'periodic',
+      type: 'periodicDistribution',
       amount: 1000,
       cycle: 'day',
       distribution: [0, 0.1, 0.1, 0.2, 0.3, 0.1, 0.1, 0.1]
@@ -47,7 +45,7 @@ describe('generatePeriodicDistribution', () => {
 
   test('should distribute error randomly to non-zero values', () => {
     const rule: TaskPeriodicDistributionRule = {
-      type: 'periodic',
+      type: 'periodicDistribution',
       amount: 100,
       cycle: 'day',
       distribution: [0, 0.1, 0.1, 0.2, 0.3, 0.1, 0.1, 0.1]
